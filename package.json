@@ -1,0 +1,22 @@
+{
+  "name": "minimal-repro",
+  "version": "1.0.0",
+  "description": "It plays a sound for every keyboard key that you press",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/yourZaNoza/hear-me-type",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "yourZaNoza",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^39.2.6"
+  }
+}
