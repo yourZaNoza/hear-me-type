@@ -1,68 +1,119 @@
-// Функция для воспроизведения звука и подсветки клавиши
-document.addEventListener("keydown", (e) => {
-  const keyIdMap = {
-    48: "0",
-    49: "1",
-    50: "2",
-    51: "3",
-    52: "4",
-    53: "5",
-    54: "6",
-    55: "7",
-    56: "8",
-    57: "9",
-    65: "A",
-    66: "B",
-    67: "C",
-    68: "D",
-    69: "E",
-    70: "F",
-    71: "G",
-    72: "H",
-    73: "I",
-    74: "J",
-    75: "K",
-    76: "L",
-    77: "M",
-    78: "N",
-    79: "O",
-    80: "P",
-    81: "Q",
-    82: "R",
-    83: "S",
-    84: "T",
-    85: "U",
-    86: "V",
-    87: "W",
-    88: "X",
-    89: "Y",
-    90: "Z",
-  };
+// functions.js
+const customAudioMap = {};
+let selectedKey = null;
 
-  const audioId = keyIdMap[e.keyCode];
-  if (audioId) {
-    const audio = document.getElementById(audioId);
+const assignBtn = document.getElementById("assign-btn");
+const fileInput = document.getElementById("sound-upload");
+const statusText = document.getElementById("status");
+
+// Загрузка сохранённых звуков
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof window.electronAPI === "undefined") {
+    console.warn(
+      "Запустите приложение через Electron для работы с пользовательскими звуками."
+    );
+    return;
+  }
+
+  try {
+    const savedSounds = await window.electronAPI.getCustomSounds();
+    for (const [keyCodeStr, fileName] of Object.entries(savedSounds)) {
+      const keyCode = parseInt(keyCodeStr, 10);
+      const audio = new Audio(`sounds/${fileName}`);
+      audio.preload = "auto";
+      customAudioMap[keyCode] = audio;
+    }
+  } catch (err) {
+    console.error("Ошибка загрузки звуков:", err);
+  }
+});
+
+// Выбор клавиши (клик по визуальной клавише)
+document.querySelectorAll(".key-hint").forEach((el) => {
+  el.addEventListener("click", () => {
+    selectedKey = parseInt(el.dataset.key, 10);
+    assignBtn.textContent = `Выберите файл для «${el.textContent}»`;
+    assignBtn.disabled = false;
+    statusText.textContent = "";
+  });
+});
+
+// Выбор файла
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file || selectedKey === null) return;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const uint8 = new Uint8Array(arrayBuffer);
+
+  try {
+    const result = await window.electronAPI.saveCustomSound(
+      selectedKey,
+      uint8,
+      file.name
+    );
+    if (result.success) {
+      const audio = new Audio(`sounds/${result.fileName}`);
+      audio.preload = "auto";
+      customAudioMap[selectedKey] = audio;
+
+      const label = String.fromCharCode(selectedKey);
+      statusText.textContent = `Звук для «${label}» сохранён!`;
+    } else {
+      statusText.textContent = `Ошибка: ${result.error}`;
+    }
+  } catch (err) {
+    statusText.textContent = `Ошибка: ${err.message}`;
+  }
+
+  selectedKey = null;
+  assignBtn.textContent = "Выберите клавишу";
+  assignBtn.disabled = true;
+  fileInput.value = "";
+});
+
+assignBtn.addEventListener("click", () => {
+  if (selectedKey !== null) fileInput.click();
+});
+
+// Обработка нажатий клавиш
+document.addEventListener("keydown", (e) => {
+  // Пользовательский звук
+  if (customAudioMap[e.keyCode]) {
+    const audio = customAudioMap[e.keyCode];
+    audio.currentTime = 0;
+    audio.play().catch(console.warn);
+
+    highlightKey(e.keyCode, true);
+    return;
+  }
+
+  // Стандартный звук (из <audio id="A"> и т.д.)
+  const id = getStandardId(e.keyCode);
+  if (id) {
+    const audio = document.getElementById(id);
     if (audio) {
       audio.currentTime = 0;
-      audio.play().catch((err) => console.warn("Audio play failed:", err));
+      audio.play().catch(console.warn);
     }
-
-    const visualKey = document.querySelector(
-      `.key-hint[data-key="${e.keyCode}"]`
-    );
-    if (visualKey) {
-      visualKey.classList.add("pressed");
-    }
-  } else {
-    console.log("Key is not found!", e.keyCode);
   }
+
+  highlightKey(e.keyCode, true);
 });
 
 document.addEventListener("keyup", (e) => {
-  const visualKey = document.querySelector(
-    `.key-hint[data-key="${e.keyCode}"]`
-  );
-  if (visualKey) {
-    visualKey.classList.remove("pressed");
-  }
+  highlightKey(e.keyCode, false);
 });
+
+function getStandardId(keyCode) {
+  if (keyCode >= 48 && keyCode <= 57) return String(keyCode - 48);
+  if (keyCode >= 65 && keyCode <= 90) return String.fromCharCode(keyCode);
+  return null;
+}
+
+function highlightKey(keyCode, pressed) {
+  const el = document.querySelector(`.key-hint[data-key="${keyCode}"]`);
+  if (el) {
+    el.classList.toggle("pressed", pressed);
+  }
+}

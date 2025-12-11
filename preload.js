@@ -16,3 +16,12 @@ window.addEventListener("DOMContentLoaded", () => {
     replaceText(`${type}-version`, process.versions[type]);
   }
 });
+
+// preload.js
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  saveCustomSound: (key, fileBuffer, fileName) =>
+    ipcRenderer.invoke("save-custom-sound", key, fileBuffer, fileName),
+  getCustomSounds: () => ipcRenderer.invoke("get-custom-sounds"),
+});
