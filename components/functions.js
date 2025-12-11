@@ -2,6 +2,7 @@
 const customAudioMap = {};
 let selectedKey = null;
 let selectedKeyLabel = "";
+const activeAudios = new Set();
 
 // Элементы интерфейса
 const assignBtn = document.getElementById("assign-btn");
@@ -33,6 +34,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupKeyClickHandlers();
 });
+
+// Остановка всех звуков
+function stopAllSounds() {
+  activeAudios.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+  activeAudios.clear();
+}
 
 // Обработчики кликов по клавишам
 function setupKeyClickHandlers() {
@@ -107,22 +117,48 @@ deleteBtn.addEventListener("click", async () => {
 
 // Воспроизведение и подсветка
 document.addEventListener("keydown", (e) => {
-  if (customAudioMap[e.keyCode]) {
-    customAudioMap[e.keyCode].currentTime = 0;
-    customAudioMap[e.keyCode].play().catch(console.warn);
-    highlightKey(e.keyCode, true);
+  const keyCode = e.keyCode;
+
+  // Специальная обработка для пробела
+  if (keyCode === 32) {
+    e.preventDefault(); // предотвращает прокрутку страницы
+    stopAllSounds();
+    highlightKey(32, true);
+    setTimeout(() => highlightKey(32, false), 150);
     return;
   }
 
-  const id = getStandardId(e.keyCode);
-  if (id) {
-    const audio = document.getElementById(id);
-    if (audio) {
-      audio.currentTime = 0;
-      audio.play().catch(console.warn);
+  // Остальные клавиши: сначала останавливаем всё (если нужно — опционально)
+  // Но по вашему ТЗ — остановка ТОЛЬКО по SPACE.
+  // Поэтому просто запускаем новый звук и добавляем в activeAudios.
+
+  let audioToPlay = null;
+
+  if (customAudioMap[keyCode]) {
+    audioToPlay = customAudioMap[keyCode];
+  } else {
+    const id = getStandardId(keyCode);
+    if (id) {
+      audioToPlay = document.getElementById(id);
     }
   }
-  highlightKey(e.keyCode, true);
+
+  if (audioToPlay) {
+    // Останавливаем, если он уже играет (чтобы не наслаивать)
+    if (!audioToPlay.paused) {
+      audioToPlay.pause();
+      audioToPlay.currentTime = 0;
+    }
+
+    // Воспроизводим
+    audioToPlay.currentTime = 0;
+    audioToPlay.play().catch(console.warn);
+
+    // Добавляем в активные
+    activeAudios.add(audioToPlay);
+  }
+
+  highlightKey(keyCode, true);
 });
 
 document.addEventListener("keyup", (e) => {

@@ -107,6 +107,17 @@ header p {
   margin-right: 33px;
 } /* Z row */
 
+.space-row {
+  margin-top: 2px;
+  justify-content: center;
+}
+
+.space-row .key-hint {
+  width: 360px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
 .controls {
   margin-top: 2.5rem;
   padding: 1.2rem;
