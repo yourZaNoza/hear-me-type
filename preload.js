@@ -24,4 +24,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveCustomSound: (key, fileBuffer, fileName) =>
     ipcRenderer.invoke("save-custom-sound", key, fileBuffer, fileName),
   getCustomSounds: () => ipcRenderer.invoke("get-custom-sounds"),
+  deleteCustomSound: (key) => ipcRenderer.invoke("delete-custom-sound", key),
 });

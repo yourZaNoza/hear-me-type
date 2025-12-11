@@ -69,3 +69,20 @@ ipcMain.handle("get-custom-sounds", async () => {
     return {};
   }
 });
+
+// Удалить пользовательский звук по keyCode
+ipcMain.handle("delete-custom-sound", async (event, key) => {
+  try {
+    const files = await fs.readdir(soundsDir);
+    for (const file of files) {
+      if (file.startsWith(`${key}_`)) {
+        await fs.unlink(path.join(soundsDir, file));
+        return { success: true };
+      }
+    }
+    return { success: false, error: "Файл не найден" };
+  } catch (err) {
+    console.error("Ошибка удаления:", err);
+    return { success: false, error: err.message };
+  }
+});
